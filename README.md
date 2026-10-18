@@ -4,6 +4,8 @@
 [HarshInvader/webos-launcher](https://github.com/HarshInvader/webos-launcher) (MIT) — это
 такой же лаунчер для LG webOS. Код здесь свой: нативный Kotlin + Jetpack Compose for TV.
 
+![Домашний экран на эмуляторе Google TV](docs/home.png)
+
 ## Что уже есть (v0.1)
 
 - **Top shelf**: размытый фон выбранного приложения на весь верх и его название крупно.
