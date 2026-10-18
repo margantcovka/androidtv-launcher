@@ -4,13 +4,14 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.relocation.BringIntoViewRequester
+import androidx.compose.foundation.relocation.bringIntoViewRequester
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -29,34 +30,45 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import io.github.margantcovka.tvlauncher.Debug
+import io.github.margantcovka.tvlauncher.data.LauncherTile
 import io.github.margantcovka.tvlauncher.data.TileSpec
-import io.github.margantcovka.tvlauncher.data.TvApp
 import kotlin.math.roundToInt
 
-private val labelStyle = TextStyle(color = Tokens.textPrimary, fontSize = Tokens.tileLabelSize, textAlign = TextAlign.Center)
+private val labelStyle = TextStyle(
+    color = Tokens.textPrimary,
+    fontSize = Tokens.tileLabelSize,
+    fontFamily = InterDisplay,
+    fontWeight = FontWeight.Medium,
+    textAlign = TextAlign.Center,
+)
 
 /**
- * Плитка tvOS: в фокусе приподнимается, бросает тень, по ней проходит блик.
- * Только готовые картинки и масштаб слоя: ни обрезки по форме, ни живых теней, ни
- * полупрозрачных слоёв. Анимации читаются в фазе отрисовки.
+ * Плитка tvOS: в фокусе приподнимается, бросает тень, по ней проходит блик; в режиме
+ * перестановки покачивается. Только готовые картинки и свойства слоя: ни обрезки по форме,
+ * ни живых теней, ни полупрозрачных слоёв. Анимации читаются в фазе отрисовки.
  */
 @Composable
 fun Tile(
-    app: TvApp,
+    tile: LauncherTile,
     spec: TileSpec,
+    moving: Boolean,
+    /** Позиция в сетке: при перестановке смена позиции прокручивает плитку в видимую область. */
+    position: Int,
     onFocused: () -> Unit,
     onClick: () -> Unit,
+    onLongClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var focused by remember { mutableStateOf(false) }
     val lift = animateFloatAsState(
-        if (focused) 1f else 0f,
+        if (focused || moving) 1f else 0f,
         tween(Tokens.focusMs, easing = FastOutSlowInEasing),
         label = "lift",
     )
@@ -67,18 +79,21 @@ fun Tile(
             sweep.animateTo(2f, tween(Tokens.sweepMs, easing = FastOutSlowInEasing))
         }
     }
-    val interaction = remember { MutableInteractionSource() }
+    val requester = remember { BringIntoViewRequester() }
+    LaunchedEffect(position) { if (moving) requester.bringIntoView() }
 
     Column(modifier) {
         Box(
             Modifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
+                .bringIntoViewRequester(requester)
                 .onFocusChanged {
                     focused = it.isFocused
                     if (it.isFocused) onFocused()
                 }
-                .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+                .remoteClick(onClick, onLongClick)
+                .focusable()
                 .graphicsLayer {
                     val s = if (Debug.off(Debug.NO_SCALE)) 1f else 1f + (Tokens.focusedScale - 1f) * lift.value
                     scaleX = s
@@ -98,7 +113,7 @@ fun Tile(
                         )
                     }
                     if (!Debug.off(Debug.NO_TILES)) drawImage(
-                        app.tile,
+                        tile.image,
                         dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
                         filterQuality = FilterQuality.Low,
                     )
@@ -119,7 +134,7 @@ fun Tile(
                 },
         )
         BasicText(
-            text = app.title,
+            text = tile.title,
             style = labelStyle,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
@@ -127,7 +142,7 @@ fun Tile(
                 .fillMaxWidth()
                 .padding(top = 14.dp)
                 .graphicsLayer {
-                    alpha = if (Debug.off(Debug.NO_LABELS)) 0f else lift.value
+                    alpha = if (tile.labelInImage || Debug.off(Debug.NO_LABELS)) 0f else lift.value
                     // Прозрачность прямо в операциях рисования, без отдельного буфера.
                     compositingStrategy = CompositingStrategy.ModulateAlpha
                 },

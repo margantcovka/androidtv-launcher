@@ -26,7 +26,7 @@ import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import io.github.margantcovka.tvlauncher.Debug
-import io.github.margantcovka.tvlauncher.data.TvApp
+import io.github.margantcovka.tvlauncher.data.LauncherTile
 import kotlin.math.roundToInt
 
 /**
@@ -34,12 +34,12 @@ import kotlin.math.roundToInt
  * смена приложения не вызывает перекомпоновку, а GPU рисует одну картинку и текст.
  */
 @Composable
-fun TopShelf(app: TvApp?, visible: Boolean, modifier: Modifier = Modifier) {
+fun TopShelf(app: LauncherTile?, visible: Boolean, modifier: Modifier = Modifier) {
     val renderer = remember { ShelfRenderer(Tokens.background.toArgb()) }
     val fade = remember { Animatable(1f) }
     val visibility = animateFloatAsState(if (visible) 1f else 0f, tween(Tokens.shelfFadeMs, easing = LinearEasing), label = "shelf")
     val measurer = rememberTextMeasurer(cacheSize = 4)
-    val style = remember { TextStyle(color = Tokens.textPrimary, fontSize = Tokens.shelfTitleSize, fontWeight = FontWeight.Bold) }
+    val style = remember { TextStyle(color = Tokens.textPrimary, fontSize = Tokens.shelfTitleSize, fontFamily = InterDisplay, fontWeight = FontWeight.Bold) }
     var previousTitle by remember { mutableStateOf<String?>(null) }
     var title by remember { mutableStateOf<String?>(null) }
 

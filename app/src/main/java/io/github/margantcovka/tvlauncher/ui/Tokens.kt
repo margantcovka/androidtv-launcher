@@ -31,4 +31,11 @@ object Tokens {
     const val backdropFadeMs = 400
     const val shelfFadeMs = 300
     const val sweepMs = 900
+
+    val sectionLabelSize = 15.sp
+    val panel = Color(0xFF1C1C1E)
+    val scrim = Color(0xB3000000)
+    val rowFocused = Color(0xFFF2F2F7)
+    val rowText = Color(0xFFF2F2F7)
+    val rowTextFocused = Color(0xFF111113)
 }

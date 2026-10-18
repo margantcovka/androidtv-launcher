@@ -10,6 +10,8 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LEANBACK_LAUNCHER" />
         </intent>
+        <!-- Плитка «Стандартный экран»: без этого Android 11 не показывает чужой пакет. -->
+        <package android:name="com.google.android.tvlauncher" />
     </queries>
 
     <application
