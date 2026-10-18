@@ -7,7 +7,6 @@ import androidx.compose.ui.unit.sp
 /** Дизайн-токены. Экран 1080p на Android TV — это 960×540 dp. */
 object Tokens {
     val background = Color(0xFF0B0B0D)
-    val tileFallback = Color(0xFF2C2C2E)
     val textPrimary = Color(0xFFF2F2F7)
     val textSecondary = Color(0x99EBEBF5)
 
@@ -16,6 +15,7 @@ object Tokens {
     val columnGap = 22.dp
     val rowGap = 36.dp
     val tileCorner = 12.dp
+    val tileShadowBlur = 14.dp
     const val focusedScale = 1.1f
 
     /** Высота top shelf: первая строка плиток начинается под ней. */
@@ -27,6 +27,8 @@ object Tokens {
     val shelfTitleSize = 44.sp
     val tileLabelSize = 13.sp
 
-    const val backdropFadeMs = 450
+    const val focusMs = 160
+    const val backdropFadeMs = 400
+    const val shelfFadeMs = 300
     const val sweepMs = 900
 }

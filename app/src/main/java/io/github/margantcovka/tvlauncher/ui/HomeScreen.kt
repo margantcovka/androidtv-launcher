@@ -1,36 +1,27 @@
 package io.github.margantcovka.tvlauncher.ui
 
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.Crossfade
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.gestures.BringIntoViewSpec
 import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.itemsIndexed
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -39,16 +30,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.FilterQuality
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.unit.dp
-import androidx.tv.material3.Text
+import androidx.compose.ui.text.TextStyle
+import io.github.margantcovka.tvlauncher.data.TileSpec
 import io.github.margantcovka.tvlauncher.data.TvApp
 import kotlinx.coroutines.launch
 
@@ -60,6 +44,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun HomeScreen(
     apps: List<TvApp>?,
+    spec: TileSpec,
     isHome: Boolean,
     homePresses: Int,
     onLaunch: (TvApp) -> Unit,
@@ -67,12 +52,12 @@ fun HomeScreen(
     val gridState = rememberLazyGridState()
     val scope = rememberCoroutineScope()
     val firstTile = remember { FocusRequester() }
+    // Фокус меняется на каждое нажатие: читаем его только там, где он нужен,
+    // чтобы не перекомпоновывать весь экран.
     var focusedKey by remember { mutableStateOf<String?>(null) }
     var focusedIndex by remember { mutableIntStateOf(0) }
-    val focused = apps?.firstOrNull { it.key == focusedKey } ?: apps?.firstOrNull()
+    val inFirstRow by remember { derivedStateOf { focusedIndex < Tokens.columns } }
 
-    val inFirstRow = focusedIndex < Tokens.columns
-    val shelfAlpha by animateFloatAsState(if (inFirstRow) 1f else 0f, tween(300), label = "shelf")
     val density = LocalDensity.current
     val bringIntoView = remember(density) {
         RowAnchoredBringIntoView(
@@ -96,41 +81,52 @@ fun HomeScreen(
     LaunchedEffect(homePresses) { if (homePresses > 0) backToTop() }
     BackHandler(enabled = isHome || !inFirstRow) { if (!inFirstRow) backToTop() }
 
-    Box(Modifier.fillMaxSize().background(Tokens.background)) {
-        TopShelf(focused, Modifier.graphicsLayer { alpha = shelfAlpha })
+    Box(Modifier.fillMaxSize()) {
+        FocusedShelf(apps, { focusedKey }, inFirstRow)
 
         when {
             apps == null -> Unit
-            apps.isEmpty() -> Text(
+            apps.isEmpty() -> BasicText(
                 "Нет приложений для Android TV",
-                color = Tokens.textSecondary,
+                style = TextStyle(color = Tokens.textSecondary),
                 modifier = Modifier.align(Alignment.Center),
             )
-            else -> CompositionLocalProvider(LocalBringIntoViewSpec provides bringIntoView) { LazyVerticalGrid(
-                columns = GridCells.Fixed(Tokens.columns),
-                state = gridState,
-                contentPadding = PaddingValues(start = Tokens.sidePadding, end = Tokens.sidePadding, bottom = Tokens.gridBottomSlack),
-                horizontalArrangement = Arrangement.spacedBy(Tokens.columnGap),
-                verticalArrangement = Arrangement.spacedBy(Tokens.rowGap),
-                modifier = Modifier.fillMaxSize(),
-            ) {
-                item(span = { GridItemSpan(maxLineSpan) }, contentType = "shelf") {
-                    Spacer(Modifier.height(Tokens.shelfHeight - Tokens.rowGap))
+            else -> CompositionLocalProvider(LocalBringIntoViewSpec provides bringIntoView) {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(Tokens.columns),
+                    state = gridState,
+                    contentPadding = PaddingValues(start = Tokens.sidePadding, end = Tokens.sidePadding, bottom = Tokens.gridBottomSlack),
+                    horizontalArrangement = Arrangement.spacedBy(Tokens.columnGap),
+                    verticalArrangement = Arrangement.spacedBy(Tokens.rowGap),
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    item(span = { GridItemSpan(maxLineSpan) }, contentType = "shelf") {
+                        Spacer(Modifier.height(Tokens.shelfHeight - Tokens.rowGap))
+                    }
+                    itemsIndexed(apps, key = { _, app -> app.key }, contentType = { _, _ -> "tile" }) { index, app ->
+                        Tile(
+                            app = app,
+                            spec = spec,
+                            onFocused = {
+                                focusedKey = app.key
+                                focusedIndex = index
+                            },
+                            onClick = { onLaunch(app) },
+                            modifier = if (index == 0) Modifier.focusRequester(firstTile) else Modifier,
+                        )
+                    }
                 }
-                itemsIndexed(apps, key = { _, app -> app.key }, contentType = { _, _ -> "tile" }) { index, app ->
-                    Tile(
-                        app = app,
-                        onFocused = {
-                            focusedKey = app.key
-                            focusedIndex = index
-                        },
-                        onClick = { onLaunch(app) },
-                        modifier = if (index == 0) Modifier.focusRequester(firstTile) else Modifier,
-                    )
-                }
-            } }
+            }
         }
     }
+}
+
+/** Отдельная функция, чтобы смена фокуса перекомпоновывала только полку. */
+@Composable
+private fun FocusedShelf(apps: List<TvApp>?, focusedKey: () -> String?, visible: Boolean) {
+    val key = focusedKey()
+    val app = apps?.firstOrNull { it.key == key } ?: apps?.firstOrNull()
+    TopShelf(app, visible)
 }
 
 /**
@@ -146,55 +142,4 @@ private class RowAnchoredBringIntoView(
 ) : BringIntoViewSpec {
     override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float =
         offset - if (isFirstRow()) firstRowTopPx else otherRowTopPx
-}
-
-@Composable
-private fun TopShelf(app: TvApp?, modifier: Modifier = Modifier) {
-    Box(modifier.fillMaxSize()) {
-        AnimatedContent(
-            targetState = app,
-            transitionSpec = { fadeIn(tween(Tokens.backdropFadeMs)) togetherWith fadeOut(tween(Tokens.backdropFadeMs)) },
-            contentKey = { it?.key },
-            label = "backdrop",
-        ) { current ->
-            if (current != null) {
-                Image(
-                    current.backdrop,
-                    contentDescription = null,
-                    contentScale = ContentScale.Crop,
-                    filterQuality = FilterQuality.Low,
-                    modifier = Modifier.fillMaxWidth().height(Tokens.shelfHeight + 120.dp),
-                )
-            }
-        }
-        Box(
-            Modifier
-                .fillMaxWidth()
-                .height(Tokens.shelfHeight + 120.dp)
-                .background(
-                    Brush.verticalGradient(
-                        0f to Color.Transparent,
-                        0.45f to Tokens.background.copy(alpha = 0.25f),
-                        1f to Tokens.background,
-                    ),
-                ),
-        )
-        Crossfade(
-            targetState = app?.title,
-            animationSpec = tween(250),
-            label = "title",
-            modifier = Modifier.padding(start = Tokens.sidePadding, end = Tokens.sidePadding, top = Tokens.shelfHeight - 96.dp),
-        ) { title ->
-            if (title != null) {
-                Text(
-                    title,
-                    color = Tokens.textPrimary,
-                    fontSize = Tokens.shelfTitleSize,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-    }
 }

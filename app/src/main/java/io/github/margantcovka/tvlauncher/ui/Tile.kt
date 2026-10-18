@@ -4,131 +4,133 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.CompositingStrategy
+import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import androidx.tv.material3.ClickableSurfaceDefaults
-import androidx.tv.material3.Glow
-import androidx.tv.material3.Surface
-import androidx.tv.material3.Text
+import io.github.margantcovka.tvlauncher.Debug
+import io.github.margantcovka.tvlauncher.data.TileSpec
 import io.github.margantcovka.tvlauncher.data.TvApp
+import kotlin.math.roundToInt
 
-/** Плитка tvOS: широкая, скруглённая; в фокусе приподнимается, бросает тень, по ней проходит блик. */
+private val labelStyle = TextStyle(color = Tokens.textPrimary, fontSize = Tokens.tileLabelSize, textAlign = TextAlign.Center)
+
+/**
+ * Плитка tvOS: в фокусе приподнимается, бросает тень, по ней проходит блик.
+ * Только готовые картинки и масштаб слоя: ни обрезки по форме, ни живых теней, ни
+ * полупрозрачных слоёв. Анимации читаются в фазе отрисовки.
+ */
 @Composable
 fun Tile(
     app: TvApp,
+    spec: TileSpec,
     onFocused: () -> Unit,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     var focused by remember { mutableStateOf(false) }
-    val sweep = remember { Animatable(-1f) }
+    val lift = animateFloatAsState(
+        if (focused) 1f else 0f,
+        tween(Tokens.focusMs, easing = FastOutSlowInEasing),
+        label = "lift",
+    )
+    val sweep = remember { Animatable(2f) }
     LaunchedEffect(focused) {
         if (focused) {
             sweep.snapTo(-1f)
             sweep.animateTo(2f, tween(Tokens.sweepMs, easing = FastOutSlowInEasing))
         }
     }
-    val labelAlpha by animateFloatAsState(if (focused) 1f else 0f, tween(200), label = "label")
-    val shape = RoundedCornerShape(Tokens.tileCorner)
+    val interaction = remember { MutableInteractionSource() }
 
     Column(modifier) {
-        Surface(
-            onClick = onClick,
-            modifier = Modifier
+        Box(
+            Modifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
                 .onFocusChanged {
                     focused = it.isFocused
                     if (it.isFocused) onFocused()
-                },
-            shape = ClickableSurfaceDefaults.shape(shape),
-            scale = ClickableSurfaceDefaults.scale(focusedScale = Tokens.focusedScale),
-            colors = ClickableSurfaceDefaults.colors(
-                containerColor = Tokens.tileFallback,
-                focusedContainerColor = Tokens.tileFallback,
-            ),
-            glow = ClickableSurfaceDefaults.glow(
-                focusedGlow = Glow(elevationColor = Color.Black.copy(alpha = 0.7f), elevation = 18.dp),
-            ),
-        ) {
-            TileArt(app, Modifier.fillMaxSize().drawWithContent {
-                drawContent()
-                val p = sweep.value
-                if (p > -1f && p < 2f) {
-                    val x = size.width * p
-                    drawRect(
-                        Brush.linearGradient(
-                            0f to Color.Transparent,
-                            0.5f to Color.White.copy(alpha = 0.22f),
-                            1f to Color.Transparent,
-                            start = Offset(x - size.width * 0.35f, 0f),
-                            end = Offset(x, size.height),
-                        ),
-                    )
                 }
-            })
-        }
-        Text(
+                .clickable(interactionSource = interaction, indication = null, onClick = onClick)
+                .graphicsLayer {
+                    val s = if (Debug.off(Debug.NO_SCALE)) 1f else 1f + (Tokens.focusedScale - 1f) * lift.value
+                    scaleX = s
+                    scaleY = s
+                }
+                .drawBehind {
+                    val l = lift.value
+                    val k = size.width / spec.widthPx
+                    if (l > 0f && !Debug.off(Debug.NO_SHADOW)) {
+                        val m = spec.shadowMarginPx * k
+                        drawImage(
+                            spec.shadow,
+                            dstOffset = IntOffset(-m.roundToInt(), -m.roundToInt()),
+                            dstSize = IntSize((size.width + 2 * m).roundToInt(), (size.height + 2 * m).roundToInt()),
+                            alpha = l,
+                            filterQuality = FilterQuality.Low,
+                        )
+                    }
+                    if (!Debug.off(Debug.NO_TILES)) drawImage(
+                        app.tile,
+                        dstSize = IntSize(size.width.roundToInt(), size.height.roundToInt()),
+                        filterQuality = FilterQuality.Low,
+                    )
+                    val p = sweep.value
+                    if (p > -1f && p < 2f && !Debug.off(Debug.NO_SWEEP)) {
+                        val x = size.width * p
+                        drawRoundRect(
+                            Brush.linearGradient(
+                                0f to Color.Transparent,
+                                0.5f to Color.White.copy(alpha = 0.22f),
+                                1f to Color.Transparent,
+                                start = Offset(x - size.width * 0.35f, 0f),
+                                end = Offset(x, size.height),
+                            ),
+                            cornerRadius = CornerRadius(spec.cornerPx * k),
+                        )
+                    }
+                },
+        )
+        BasicText(
             text = app.title,
-            color = Tokens.textPrimary,
-            fontSize = Tokens.tileLabelSize,
+            style = labelStyle,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
-            textAlign = TextAlign.Center,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(top = 14.dp)
-                .graphicsLayer { alpha = labelAlpha },
-        )
-    }
-}
-
-@Composable
-private fun TileArt(app: TvApp, modifier: Modifier) {
-    if (app.isBanner) {
-        Image(app.art, contentDescription = app.title, contentScale = ContentScale.Crop, modifier = modifier)
-        return
-    }
-    val edges = app.edgeColors
-    val background = if (edges != null) {
-        Brush.horizontalGradient(0.5f to Color(edges.first), 0.5f to Color(edges.second))
-    } else {
-        Brush.horizontalGradient(listOf(Tokens.tileFallback, Tokens.tileFallback))
-    }
-    Box(modifier.background(background), contentAlignment = Alignment.Center) {
-        Image(
-            app.art,
-            contentDescription = app.title,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier
-                .fillMaxHeight(if (edges != null) 1f else 0.72f)
-                .aspectRatio(1f),
+                .graphicsLayer {
+                    alpha = if (Debug.off(Debug.NO_LABELS)) 0f else lift.value
+                    // Прозрачность прямо в операциях рисования, без отдельного буфера.
+                    compositingStrategy = CompositingStrategy.ModulateAlpha
+                },
         )
     }
 }

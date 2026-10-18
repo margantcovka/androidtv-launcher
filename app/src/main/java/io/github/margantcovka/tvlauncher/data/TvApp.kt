@@ -3,17 +3,29 @@ package io.github.margantcovka.tvlauncher.data
 import android.content.ComponentName
 import androidx.compose.ui.graphics.ImageBitmap
 
-/** Приложение на плитке. Картинки готовятся один раз при загрузке списка. */
+/** Приложение на плитке. Все картинки готовятся один раз при загрузке списка. */
 class TvApp(
     val component: ComponentName,
     val title: String,
-    /** Баннер 16:9 или, если баннера нет, иконка приложения. */
-    val art: ImageBitmap,
-    val isBanner: Boolean,
-    /** Цвета левого и правого края иконки (ARGB), чтобы квадратная иконка тянулась на всю ширину плитки. */
-    val edgeColors: Pair<Int, Int>?,
-    /** Маленькая заранее размытая картинка для top shelf. */
-    val backdrop: ImageBitmap,
+    /** Готовая плитка со скруглёнными углами в размере плитки в фокусе. */
+    val tile: ImageBitmap,
+    /** Размытый фон top shelf: [Images.SHELF_W]×[Images.SHELF_H] пикселей ARGB. */
+    val shelf: IntArray,
+    /** lastUpdateTime пакета — по нему понимаем, что плитку пора перерисовать. */
+    val updatedAt: Long,
 ) {
     val key: String get() = component.flattenToShortString()
 }
+
+/**
+ * Размеры плитки в пикселях при максимальном (фокусном) масштабе и общая тень.
+ * Плитка в фокусе рисуется 1:1, без растягивания.
+ */
+class TileSpec(
+    val widthPx: Int,
+    val heightPx: Int,
+    val cornerPx: Float,
+    val shadow: ImageBitmap,
+    /** Отступ тени от краёв плитки в пикселях картинки тени. */
+    val shadowMarginPx: Int,
+)
