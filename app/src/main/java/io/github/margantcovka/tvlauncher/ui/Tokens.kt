@@ -25,6 +25,12 @@ object Tokens {
     /** Запас под сеткой, чтобы даже последняя строка могла подняться к scrolledRowTop. */
     val gridBottomSlack = 360.dp
     val shelfTitleSize = 44.sp
+    /** Шапка над top shelf: приветствие, дата, время. */
+    val headerTop = 34.dp
+    val greetingSize = 26.sp
+    val dateSize = 16.sp
+    val clockSize = 34.sp
+    val headerSecondary = Color(0xCCEBEBF5)
     val tileLabelSize = 13.sp
 
     const val focusMs = 160

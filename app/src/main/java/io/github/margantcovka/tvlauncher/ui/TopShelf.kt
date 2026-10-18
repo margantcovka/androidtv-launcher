@@ -38,8 +38,13 @@ fun TopShelf(app: LauncherTile?, visible: Boolean, modifier: Modifier = Modifier
     val renderer = remember { ShelfRenderer(Tokens.background.toArgb()) }
     val fade = remember { Animatable(1f) }
     val visibility = animateFloatAsState(if (visible) 1f else 0f, tween(Tokens.shelfFadeMs, easing = LinearEasing), label = "shelf")
-    val measurer = rememberTextMeasurer(cacheSize = 4)
+    val measurer = rememberTextMeasurer(cacheSize = 8)
     val style = remember { TextStyle(color = Tokens.textPrimary, fontSize = Tokens.shelfTitleSize, fontFamily = InterDisplay, fontWeight = FontWeight.Bold) }
+    val clock = rememberClockText()
+    val greetingStyle = remember { TextStyle(color = Tokens.textPrimary, fontSize = Tokens.greetingSize, fontFamily = InterDisplay, fontWeight = FontWeight.Bold) }
+    val dateStyle = remember { TextStyle(color = Tokens.headerSecondary, fontSize = Tokens.dateSize, fontFamily = InterDisplay, fontWeight = FontWeight.Medium) }
+    // tnum: цифры одной ширины, время не дёргается при смене минут.
+    val timeStyle = remember { TextStyle(color = Tokens.textPrimary, fontSize = Tokens.clockSize, fontFamily = InterDisplay, fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum") }
     var previousTitle by remember { mutableStateOf<String?>(null) }
     var title by remember { mutableStateOf<String?>(null) }
 
@@ -62,6 +67,19 @@ fun TopShelf(app: LauncherTile?, visible: Boolean, modifier: Modifier = Modifier
             )
             if (v <= 0f || Debug.off(Debug.NO_TITLE)) return@drawBehind
             val pad = Tokens.sidePadding.toPx()
+            if (!Debug.off(Debug.NO_TITLE)) {
+                // Шапка: приветствие и дата слева, время справа.
+                val text = clock.value
+                val headerTop = Tokens.headerTop.toPx()
+                val greeting = measurer.measure(text.greeting, greetingStyle, maxLines = 1)
+                drawText(greeting, topLeft = Offset(pad, headerTop), alpha = v)
+                val date = measurer.measure(text.date, dateStyle, maxLines = 1)
+                drawText(date, topLeft = Offset(pad, headerTop + greeting.size.height + 2.dp.toPx()), alpha = v)
+                val time = measurer.measure(text.time, timeStyle, maxLines = 1)
+                // Время на одной базовой линии с приветствием.
+                val timeTop = headerTop + greeting.firstBaseline - time.firstBaseline
+                drawText(time, topLeft = Offset(size.width - pad - time.size.width, timeTop), alpha = v)
+            }
             val top = (Tokens.shelfHeight - 96.dp).toPx()
             val constraints = Constraints(maxWidth = (size.width - 2 * pad).roundToInt().coerceAtLeast(0))
             fun draw(text: String?, alpha: Float) {

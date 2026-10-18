@@ -25,11 +25,16 @@ class ShelfRenderer(private val background: Int) {
     private val shown = blank.copyOf()
     private val out = IntArray(w * rows)
 
-    /** Сколько смешивать с фоном в каждой строке: градиент полки вниз, ниже полки — только фон. */
+    /**
+     * Сколько смешивать с фоном в каждой строке: градиент полки вниз, ниже полки — только фон.
+     * Сверху тоже притемнено — там белым написаны приветствие и время.
+     */
     private val rowFade = FloatArray(rows) { r ->
         if (r >= shelfRows) return@FloatArray 1f
         val y = (r + 0.5f) / shelfRows
-        if (y < 0.45f) 0.25f * y / 0.45f else 0.25f + 0.75f * (y - 0.45f) / 0.55f
+        val down = if (y < 0.45f) 0.25f * y / 0.45f else 0.25f + 0.75f * (y - 0.45f) / 0.55f
+        val top = if (y < 0.3f) 0.45f * (1f - y / 0.3f) else 0f
+        maxOf(down, top)
     }
 
     // Два буфера по очереди: RenderThread может ещё загружать прошлый кадр, пока мы пишем новый.
