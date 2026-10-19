@@ -27,8 +27,8 @@ It was built for a budget TV (4× Cortex-A55, Mali-470 GPU, 1.3 GB RAM) and runs
 
 - **Apple TV–style top shelf**: a blurred backdrop of the focused app and its large title,
   with a greeting, the date and a clock above it.
-- **Weather under the clock**: current temperature and your city, detected by IP. Celsius by
-  default, Fahrenheit in settings, or turn it off.
+- **Weather under the clock**: current temperature and city. The city is detected by IP or
+  picked by name in settings. Celsius by default, Fahrenheit in settings, or turn it off.
 - **tvOS-style grid**: wide rounded tiles, five per row. The focused tile grows, casts a
   shadow and catches a light sweep.
 - **Three sections:**
@@ -37,7 +37,7 @@ It was built for a budget TV (4× Cortex-A55, Mali-470 GPU, 1.3 GB RAM) and runs
   - **Sources**: live TV and HDMI/AV inputs, one click to switch.
   - **More**: home screen settings, system settings, the stock launcher.
 - **Tile menu** (hold OK): move, hide from the home screen, app info.
-- **Home screen settings**: show or hide any tile, weather on/off and units, reset to
+- **Home screen settings**: show or hide any tile, weather on/off, city and units, reset to
   alphabetical order.
 - Back and Home return to the top of the screen.
 - **English and Russian**: the interface follows the TV's system language.
@@ -105,10 +105,13 @@ launcher's page in Settings, which has an *Enable* button.
 
 ## Privacy
 
-The launcher only goes online for the weather. Your approximate location comes from your IP
-address via [ipapi.co](https://ipapi.co) (or [ipwho.is](https://ipwho.is) as a fallback) and
-is cached for a day; the forecast comes from [Open-Meteo](https://open-meteo.com). No
-accounts, no analytics. Turn the weather off in *More → Home Screen* and nothing is sent.
+The launcher only goes online for the weather. Unless you pick a city yourself, your
+approximate location comes from your IP address via [ipapi.co](https://ipapi.co) (or
+[ipwho.is](https://ipwho.is) as a fallback) and is cached for a day. IP location is often your
+provider's city, so you can pick yours in *More → Home Screen → City*. The forecast comes from
+[Open-Meteo](https://open-meteo.com), or [MET Norway](https://api.met.no) if Open-Meteo is
+down; city search uses the Open-Meteo geocoder. No accounts, no analytics. Turn the weather
+off and nothing is sent.
 
 ## Build from source
 
@@ -150,13 +153,14 @@ app/src/main/java/io/github/margantcovka/tvlauncher/
   data/InputSource.kt          live TV and HDMI/AV inputs
   data/SymbolTiles.kt          icon-and-label tiles (inputs, More)
   data/LauncherPrefs.kt        tile order and hidden tiles (SharedPreferences)
-  data/Weather.kt              location by IP, Open-Meteo forecast, cache
+  data/Weather.kt              location by IP or chosen city, Open-Meteo / MET Norway, cache
   data/Launcher.kt             what a tile does on OK
   data/Images.kt               rounded tiles, shadows, blurred top shelf backdrop
   ui/HomeScreen.kt             top shelf + grid by section, tile menu, reordering
   ui/Tile.kt                   tile: scale, shadow, light sweep, label
   ui/TileMenu.kt, FocusRow.kt  hold-OK menu, tvOS-style rows
   ui/SettingsScreen.kt         home screen settings
+  ui/CityScreen.kt             city search for the weather
   ui/ShelfRenderer.kt          CPU blending of the top shelf backdrop
   ui/Tokens.kt                 colors, sizes, timings
 ```

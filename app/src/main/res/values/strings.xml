@@ -37,4 +37,14 @@
     <string name="settings_weather_units">Units</string>
     <string name="units_celsius">Celsius (°C)</string>
     <string name="units_fahrenheit">Fahrenheit (°F)</string>
+
+    <string name="settings_weather_city">City</string>
+    <string name="city_title">City</string>
+    <string name="city_hint">Weather is shown for this city.\n\nAutomatic uses the location of your internet connection, which is often your provider\'s city rather than yours.</string>
+    <string name="city_search_hint">Search for a city</string>
+    <string name="city_automatic">Automatic</string>
+    <string name="city_automatic_with">Automatic (%1$s)</string>
+    <string name="city_searching">Searching…</string>
+    <string name="city_no_results">Nothing found</string>
+    <string name="city_error">No connection. Try again later.</string>
 </resources>

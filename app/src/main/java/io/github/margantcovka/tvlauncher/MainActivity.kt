@@ -19,6 +19,7 @@ import io.github.margantcovka.tvlauncher.data.TileAction
 import io.github.margantcovka.tvlauncher.data.TileSpec
 import io.github.margantcovka.tvlauncher.data.Weather
 import io.github.margantcovka.tvlauncher.data.WeatherSource
+import io.github.margantcovka.tvlauncher.ui.CityScreen
 import io.github.margantcovka.tvlauncher.ui.HomeScreen
 import io.github.margantcovka.tvlauncher.ui.SettingsScreen
 import io.github.margantcovka.tvlauncher.ui.WeatherSettings
@@ -32,7 +33,7 @@ import kotlin.math.roundToInt
 
 class MainActivity : ComponentActivity() {
 
-    private enum class Screen { HOME, SETTINGS }
+    private enum class Screen { HOME, SETTINGS, CITY }
 
     private lateinit var spec: TileSpec
     private lateinit var repository: LauncherRepository
@@ -42,7 +43,7 @@ class MainActivity : ComponentActivity() {
     private var homePresses by mutableIntStateOf(0)
     private lateinit var weatherSource: WeatherSource
     private var weather by mutableStateOf<Weather?>(null)
-    private var weatherSettings by mutableStateOf(WeatherSettings(enabled = true, fahrenheit = false))
+    private var weatherSettings by mutableStateOf(WeatherSettings(enabled = true, fahrenheit = false, city = null, ipCity = null))
     private var weatherJob: Job? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -52,12 +53,19 @@ class MainActivity : ComponentActivity() {
         repository = LauncherRepository(applicationContext, spec)
         launcher = Launcher(this)
         weatherSource = WeatherSource(applicationContext)
-        weatherSettings = WeatherSettings(weatherSource.enabled, weatherSource.fahrenheit)
+        weatherSettings = weatherSettings()
         weather = weatherSource.cached()
         val isHome = intent?.hasCategory(Intent.CATEGORY_HOME) == true
         setContent {
             val current = catalog
-            if (screen == Screen.SETTINGS && current != null) {
+            if (screen == Screen.CITY) {
+                CityScreen(
+                    automaticLabel = weatherSettings.ipCity,
+                    search = { query -> withContext(Dispatchers.IO) { runCatching { weatherSource.search(query) }.getOrNull() } },
+                    onPick = { place -> weatherSource.manualPlace = place; weatherChanged(); screen = Screen.SETTINGS },
+                    onBack = { screen = Screen.SETTINGS },
+                )
+            } else if (screen == Screen.SETTINGS && current != null) {
                 SettingsScreen(
                     catalog = current,
                     onToggleHidden = { tile -> repository.prefs.setHidden(tile.key, tile.key !in current.hidden); rearrange() },
@@ -65,6 +73,7 @@ class MainActivity : ComponentActivity() {
                     weather = weatherSettings,
                     onToggleWeather = { weatherSource.enabled = !weatherSource.enabled; weatherChanged() },
                     onToggleUnits = { weatherSource.fahrenheit = !weatherSource.fahrenheit; weatherChanged() },
+                    onChooseCity = { screen = Screen.CITY },
                     onBack = { screen = Screen.HOME },
                 )
             } else {
@@ -102,7 +111,8 @@ class MainActivity : ComponentActivity() {
     }
 
     private companion object {
-        const val RETRY_MS = 2 * 60 * 1000L
+        /** Паузы перед повтором после сбоя: короткий сбой сервиса почти незаметен, долгий не долбит сеть. */
+        val RETRY_MS = longArrayOf(15_000, 30_000, 60_000, 120_000)
     }
 
     /** Погода обновляется, пока лаунчер на экране: сразу, если устарела, потом раз в полчаса. */
@@ -110,23 +120,31 @@ class MainActivity : ComponentActivity() {
         weatherJob?.cancel()
         if (!weatherSource.enabled) return
         weatherJob = lifecycleScope.launch {
+            var failures = 0
             while (true) {
-                var failed = false
                 if (weatherSource.isStale() || weather == null) {
                     val fresh = withContext(Dispatchers.IO) { weatherSource.fetch() }
-                    if (fresh != null) weather = fresh else failed = true
+                    if (fresh != null) weather = fresh
+                    failures = if (fresh != null) 0 else failures + 1
                 }
-                // Без сети пробуем снова через пару минут, а не через полчаса.
-                delay(if (failed) RETRY_MS else WeatherSource.MAX_AGE_MS)
+                weatherSettings = weatherSettings()
+                delay(if (failures > 0) RETRY_MS[minOf(failures, RETRY_MS.size) - 1] else WeatherSource.MAX_AGE_MS)
             }
         }
     }
 
     private fun weatherChanged() {
-        weatherSettings = WeatherSettings(weatherSource.enabled, weatherSource.fahrenheit)
+        weatherSettings = weatherSettings()
         weather = weatherSource.cached()
         startWeather()
     }
+
+    private fun weatherSettings() = WeatherSettings(
+        enabled = weatherSource.enabled,
+        fahrenheit = weatherSource.fahrenheit,
+        city = weatherSource.manualPlace?.city,
+        ipCity = weatherSource.ipCity(),
+    )
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)

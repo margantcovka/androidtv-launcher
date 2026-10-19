@@ -41,10 +41,11 @@ private sealed interface SettingsItem {
     data object ResetOrder : SettingsItem
     data object WeatherToggle : SettingsItem
     data object WeatherUnits : SettingsItem
+    data object WeatherCity : SettingsItem
 }
 
 /** Настройки погоды в шапке. */
-data class WeatherSettings(val enabled: Boolean, val fahrenheit: Boolean)
+data class WeatherSettings(val enabled: Boolean, val fahrenheit: Boolean, val city: String?, val ipCity: String?)
 
 /** Настройки главного экрана: какие плитки показывать и сброс порядка. */
 @Composable
@@ -55,6 +56,7 @@ fun SettingsScreen(
     weather: WeatherSettings,
     onToggleWeather: () -> Unit,
     onToggleUnits: () -> Unit,
+    onChooseCity: () -> Unit,
     onBack: () -> Unit,
 ) {
     BackHandler(onBack = onBack)
@@ -69,7 +71,10 @@ fun SettingsScreen(
         }
         add(SettingsItem.Header(stringResource(R.string.settings_weather)))
         add(SettingsItem.WeatherToggle)
-        if (weather.enabled) add(SettingsItem.WeatherUnits)
+        if (weather.enabled) {
+            add(SettingsItem.WeatherCity)
+            add(SettingsItem.WeatherUnits)
+        }
         add(SettingsItem.Header(stringResource(R.string.settings_order)))
         add(SettingsItem.ResetOrder)
     }
@@ -98,6 +103,7 @@ fun SettingsScreen(
                     SettingsItem.ResetOrder -> "reset"
                     SettingsItem.WeatherToggle -> "weather"
                     SettingsItem.WeatherUnits -> "units"
+                    SettingsItem.WeatherCity -> "city"
                 }
             }) { item ->
                 val index = items.indexOf(item)
@@ -133,6 +139,13 @@ fun SettingsScreen(
                         onClick = onToggleWeather,
                         modifier = focusModifier,
                     )
+                    SettingsItem.WeatherCity -> ValueRow(
+                        title = stringResource(R.string.settings_weather_city),
+                        value = weather.city ?: automaticCity(weather.ipCity),
+                        dimValue = false,
+                        onClick = onChooseCity,
+                        modifier = focusModifier,
+                    )
                     SettingsItem.WeatherUnits -> ValueRow(
                         title = stringResource(R.string.settings_weather_units),
                         value = stringResource(if (weather.fahrenheit) R.string.units_fahrenheit else R.string.units_celsius),
@@ -166,3 +179,8 @@ private fun ValueRow(title: String, value: String, dimValue: Boolean, onClick: (
         )
     }
 }
+
+/** «Автоматически (Tel Aviv)» или просто «Автоматически», пока город по IP не известен. */
+@Composable
+fun automaticCity(ipCity: String?): String =
+    if (ipCity == null) stringResource(R.string.city_automatic) else stringResource(R.string.city_automatic_with, ipCity)

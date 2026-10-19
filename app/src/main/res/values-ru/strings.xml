@@ -35,4 +35,14 @@
     <string name="settings_weather_units">Единицы</string>
     <string name="units_celsius">Цельсий (°C)</string>
     <string name="units_fahrenheit">Фаренгейт (°F)</string>
+
+    <string name="settings_weather_city">Город</string>
+    <string name="city_title">Город</string>
+    <string name="city_hint">Погода показывается для этого города.\n\n«Автоматически» — по адресу интернет-подключения. Часто это город провайдера, а не ваш.</string>
+    <string name="city_search_hint">Найти город</string>
+    <string name="city_automatic">Автоматически</string>
+    <string name="city_automatic_with">Автоматически (%1$s)</string>
+    <string name="city_searching">Ищем…</string>
+    <string name="city_no_results">Ничего не найдено</string>
+    <string name="city_error">Нет подключения. Попробуйте позже.</string>
 </resources>
