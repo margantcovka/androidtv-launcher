@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
                 SettingsScreen(
                     catalog = current,
                     onToggleHidden = { tile -> repository.prefs.setHidden(tile.key, tile.key !in current.hidden); rearrange() },
-                    onResetOrder = { repository.prefs.resetOrder(); rearrange(); toast("Порядок сброшен") },
+                    onResetOrder = { repository.prefs.resetOrder(); rearrange(); toast(getString(R.string.toast_order_reset)) },
                     onBack = { screen = Screen.HOME },
                 )
             } else {
@@ -90,7 +90,7 @@ class MainActivity : ComponentActivity() {
         if (tile.action == TileAction.LauncherSettings) {
             screen = Screen.SETTINGS
         } else if (!launcher.open(tile.action)) {
-            toast("Не удалось открыть «${tile.title}»")
+            toast(getString(R.string.toast_open_failed, tile.title))
         }
     }
 

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="section_apps">Приложения</string>
+    <string name="section_sources">Источники</string>
+    <string name="section_more">Ещё</string>
+
+    <string name="tile_home_screen">Главный экран</string>
+    <string name="tile_settings">Настройки</string>
+    <string name="tile_stock_home">Стандартный экран</string>
+    <string name="tile_live_tv">Телевизор</string>
+
+    <string name="greeting_morning">Доброе утро</string>
+    <string name="greeting_afternoon">Добрый день</string>
+    <string name="greeting_evening">Добрый вечер</string>
+    <string name="greeting_night">Доброй ночи</string>
+
+    <string name="no_apps">Нет приложений для Android TV</string>
+    <string name="menu_move">Переместить</string>
+    <string name="menu_hide">Скрыть с главного экрана</string>
+    <string name="menu_app_info">О приложении</string>
+    <string name="menu_cancel">Отмена</string>
+
+    <string name="settings_title">Главный экран</string>
+    <string name="settings_hint">Выберите, что показывать.\n\nНа главном экране удерживайте OK на плитке, чтобы переместить или скрыть её.</string>
+    <string name="settings_order">Порядок</string>
+    <string name="settings_shown">Показано</string>
+    <string name="settings_hidden">Скрыто</string>
+    <string name="settings_reset_order">Вернуть порядок по алфавиту</string>
+
+    <string name="toast_order_reset">Порядок сброшен</string>
+    <string name="toast_open_failed">Не удалось открыть «%1$s»</string>
+</resources>

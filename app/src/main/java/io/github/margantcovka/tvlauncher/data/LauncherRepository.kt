@@ -5,7 +5,7 @@ import android.content.Context
 import io.github.margantcovka.tvlauncher.R
 
 /** Собирает все плитки главного экрана и применяет порядок и скрытие из [LauncherPrefs]. */
-class LauncherRepository(context: Context, spec: TileSpec) {
+class LauncherRepository(private val context: Context, spec: TileSpec) {
 
     val prefs = LauncherPrefs(context)
     private val apps = AppSource(context, spec)
@@ -28,14 +28,14 @@ class LauncherRepository(context: Context, spec: TileSpec) {
 
     private fun more(): List<LauncherTile> {
         val list = mutableListOf(
-            symbols.tile("more:launcher", "Главный экран", Section.MORE, TileAction.LauncherSettings, R.drawable.ic_apps),
-            symbols.tile("more:settings", "Настройки", Section.MORE, TileAction.SystemSettings, R.drawable.ic_settings),
+            symbols.tile("more:launcher", context.getString(R.string.tile_home_screen), Section.MORE, TileAction.LauncherSettings, R.drawable.ic_apps),
+            symbols.tile("more:settings", context.getString(R.string.tile_settings), Section.MORE, TileAction.SystemSettings, R.drawable.ic_settings),
         )
         // Если стандартный экран отключён (чтобы Home открывал этот лаунчер), плитка ведёт
         // на его страницу в настройках с кнопкой «Включить» — так можно вернуться без компьютера.
         when (apps.isEnabled(STOCK_HOME.packageName)) {
-            true -> list += symbols.tile("more:stockhome", "Стандартный экран", Section.MORE, TileAction.Activity(STOCK_HOME), R.drawable.ic_home)
-            false -> list += symbols.tile("more:stockhome", "Стандартный экран", Section.MORE, TileAction.AppDetails(STOCK_HOME.packageName), R.drawable.ic_home)
+            true -> list += symbols.tile("more:stockhome", context.getString(R.string.tile_stock_home), Section.MORE, TileAction.Activity(STOCK_HOME), R.drawable.ic_home)
+            false -> list += symbols.tile("more:stockhome", context.getString(R.string.tile_stock_home), Section.MORE, TileAction.AppDetails(STOCK_HOME.packageName), R.drawable.ic_home)
             null -> Unit
         }
         return list

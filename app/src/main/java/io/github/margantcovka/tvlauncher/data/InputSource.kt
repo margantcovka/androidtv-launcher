@@ -21,7 +21,7 @@ class InputSource(private val context: Context, private val symbols: SymbolTiles
             .getOrDefault(emptyList())
         val tiles = mutableListOf<LauncherTile>()
         if (liveTv != null && inputs.any { it.type == TvInputInfo.TYPE_TUNER }) {
-            tiles += symbols.tile("source:livetv", "Телевизор", Section.SOURCES, TileAction.Activity(liveTv), R.drawable.ic_tv)
+            tiles += symbols.tile("source:livetv", context.getString(R.string.tile_live_tv), Section.SOURCES, TileAction.Activity(liveTv), R.drawable.ic_tv)
         }
         inputs
             .filter { it.type != TvInputInfo.TYPE_TUNER && it.type != TvInputInfo.TYPE_OTHER && it.parentId == null && !it.isHidden(context) }

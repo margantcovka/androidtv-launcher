@@ -1,5 +1,7 @@
 package io.github.margantcovka.tvlauncher.ui
 
+import io.github.margantcovka.tvlauncher.R
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.BringIntoViewSpec
@@ -51,7 +53,6 @@ import io.github.margantcovka.tvlauncher.data.TileAction
 import io.github.margantcovka.tvlauncher.data.TileSpec
 import kotlinx.coroutines.launch
 
-private val sectionTitles = mapOf(Section.SOURCES to "Источники", Section.MORE to "Ещё")
 private val sectionStyle = TextStyle(color = Tokens.textSecondary, fontSize = Tokens.sectionLabelSize, fontFamily = InterDisplay, fontWeight = FontWeight.SemiBold)
 
 /** Перестановка: раздел, текущий порядок его видимых плиток и перемещаемая плитка. */
@@ -175,7 +176,7 @@ fun HomeScreen(
         when {
             catalog == null -> Unit
             sections.isEmpty() -> BasicText(
-                "Нет приложений для Android TV",
+                stringResource(R.string.no_apps),
                 style = TextStyle(color = Tokens.textSecondary, fontFamily = InterDisplay),
                 modifier = Modifier.align(Alignment.Center),
             )
@@ -194,7 +195,7 @@ fun HomeScreen(
                     sections.forEachIndexed { sectionIndex, (section, tiles) ->
                         if (sectionIndex > 0) {
                             item(key = "label:$section", span = { GridItemSpan(maxLineSpan) }, contentType = "label") {
-                                BasicText(sectionTitles[section].orEmpty(), style = sectionStyle, modifier = Modifier.padding(top = 4.dp))
+                                BasicText(sectionTitle(section), style = sectionStyle, modifier = Modifier.padding(top = 4.dp))
                             }
                         }
                         itemsIndexed(tiles, key = { _, tile -> tile.key }, contentType = { _, _ -> "tile" }) { index, tile ->
@@ -216,14 +217,18 @@ fun HomeScreen(
 
         menuTile?.let { tile ->
             val close = { menuTile = null; focus(tile.key) }
+            val moveLabel = stringResource(R.string.menu_move)
+            val hideLabel = stringResource(R.string.menu_hide)
+            val infoLabel = stringResource(R.string.menu_app_info)
+            val cancelLabel = stringResource(R.string.menu_cancel)
             val options = buildList {
-                add(MenuOption("Переместить") {
+                add(MenuOption(moveLabel) {
                     menuTile = null
                     val keys = catalog?.visible(tile.section).orEmpty().map { it.key }
                     moving = MoveState(tile.section, mutableStateListOf(*keys.toTypedArray()), keys, tile.key)
                     focus(tile.key)
                 })
-                if (tile.hideable) add(MenuOption("Скрыть с главного экрана") {
+                if (tile.hideable) add(MenuOption(hideLabel) {
                     menuTile = null
                     val siblings = catalog?.visible(tile.section).orEmpty()
                     val i = siblings.indexOfFirst { it.key == tile.key }
@@ -231,8 +236,8 @@ fun HomeScreen(
                     onHide(tile)
                     focus(next?.key)
                 })
-                if (tile.action is TileAction.App) add(MenuOption("О приложении") { close(); onAppInfo(tile) })
-                add(MenuOption("Отмена") { close() })
+                if (tile.action is TileAction.App) add(MenuOption(infoLabel) { close(); onAppInfo(tile) })
+                add(MenuOption(cancelLabel) { close() })
             }
             TileMenu(title = tile.title, options = options, onDismiss = { close() })
         }
@@ -254,4 +259,11 @@ private class RowAnchoredBringIntoView(
 ) : BringIntoViewSpec {
     override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float): Float =
         offset - if (isFirstRow()) firstRowTopPx else otherRowTopPx
+}
+
+@Composable
+private fun sectionTitle(section: Section): String = when (section) {
+    Section.APPS -> ""
+    Section.SOURCES -> stringResource(R.string.section_sources)
+    Section.MORE -> stringResource(R.string.section_more)
 }

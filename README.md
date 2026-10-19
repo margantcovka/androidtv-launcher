@@ -1,123 +1,164 @@
-# Android TV Launcher (в стиле Apple TV)
+<div align="center">
 
-Домашний экран для Android TV / Google TV в стиле tvOS. Идея и дизайн взяты у
-[HarshInvader/webos-launcher](https://github.com/HarshInvader/webos-launcher) (MIT) — это
-такой же лаунчер для LG webOS. Код здесь свой: нативный Kotlin + Jetpack Compose for TV.
+# TV Launcher
 
-![Домашний экран на телевизоре](docs/home.png)
+**An Apple TV–style home screen for Android TV and Google TV**
 
-## Что есть
+Native Kotlin + Jetpack Compose. Smooth even on low-end TVs.
 
-- **Top shelf**: размытый фон выбранной плитки на весь верх и её название крупно.
-  Фон размывается один раз на CPU в картинку 64×36 и просто растягивается — без живого
-  blur, чтобы не тормозить на слабом GPU телевизора.
-- **Сетка tvOS**: широкие скруглённые плитки по 5 в ряд. Плитка в фокусе увеличивается,
-  отбрасывает тень, по ней проходит блик; подпись видна только у неё.
-- Переход ниже первой строки поднимает сетку поверх top shelf; Back или повторный Home
-  возвращают в начало.
-- **Три раздела**: приложения (`LEANBACK_LAUNCHER`, родные баннеры 320×180, без баннера —
-  иконка по центру на цветах её краёв), «Источники» (эфирное ТВ и HDMI/AV-входы из
-  `TvInputManager`; отключённые входы приглушены) и «Ещё» (настройки главного экрана,
-  системные настройки, стандартный экран).
-- Переключение на вход — стандартный интент `TvContract.buildChannelUriForPassthroughInput`.
-- **Удержание OK** на плитке: «Переместить» (стрелки двигают плитку внутри раздела,
-  OK сохраняет, Back отменяет), «Скрыть с главного экрана», «О приложении».
-- **Настройки главного экрана** (плитка «Главный экран»): показать или скрыть любую плитку,
-  вернуть порядок по алфавиту.
-- Шрифт Inter Display (OFL, `licenses/Inter-OFL.txt`) — ближайший открытый аналог SF Pro.
-  Иконки — Material Icons (Apache 2.0).
+[![Download APK](https://img.shields.io/github/v/release/margantcovka/androidtv-launcher?label=Download%20APK&style=for-the-badge&color=0a84ff)](https://github.com/margantcovka/androidtv-launcher/releases/latest)
+![Android TV 8.0+](https://img.shields.io/badge/Android%20TV-8.0%2B-3ddc84?style=for-the-badge&logo=android&logoColor=white)
+![License MIT](https://img.shields.io/badge/license-MIT-lightgrey?style=for-the-badge)
 
-## Домашний экран по кнопке Home
+![Home screen on a TV](docs/home.png)
 
-На Android TV 11 стандартный лаунчер — системное приложение с повышенным приоритетом на
-`HOME`, поэтому выбор «по умолчанию» на него не действует. Работает так (через ADB):
+</div>
+
+## About
+
+A port of [webos-launcher](https://github.com/HarshInvader/webos-launcher), a tvOS-style
+launcher for LG webOS TVs, to Android TV. The idea and design come from there; the code is
+new. It is a native app rather than a web page, with no WebView.
+
+It was built for a budget TV (4× Cortex-A55, Mali-470 GPU, 1.3 GB RAM) and runs at about
+60 fps on it.
+
+## Features
+
+- **Apple TV–style top shelf**: a blurred backdrop of the focused app and its large title,
+  with a greeting, the date and a clock above it.
+- **tvOS-style grid**: wide rounded tiles, five per row. The focused tile grows, casts a
+  shadow and catches a light sweep.
+- **Three sections:**
+  - **Apps**: all TV apps with their own banners. For apps without a banner, the icon is
+    drawn over colors sampled from its edges.
+  - **Sources**: live TV and HDMI/AV inputs, one click to switch.
+  - **More**: home screen settings, system settings, the stock launcher.
+- **Tile menu** (hold OK): move, hide from the home screen, app info.
+- **Home screen settings**: show or hide any tile, reset to alphabetical order.
+- Back and Home return to the top of the screen.
+- **English and Russian**: the interface follows the TV's system language.
+- Inter Display font, the closest open alternative to SF Pro.
+
+<div align="center">
+<img src="docs/settings.png" alt="Home screen settings" width="80%">
+</div>
+
+## Install
+
+Requires **Android TV / Google TV 8.0 or newer**.
+
+### Option 1: Downloader (no computer)
+
+1. Install **Downloader** (by AFTVnews) from Google Play.
+2. Allow it to install apps: *Settings → Apps → Special app access → Install unknown apps →
+   Downloader*.
+3. Enter this URL in Downloader:
+   ```
+   https://github.com/margantcovka/androidtv-launcher/releases/latest/download/tv-launcher.apk
+   ```
+4. Install. The app shows up as **Launcher**.
+
+### Option 2: ADB from a computer
+
+Enable developer options on the TV (*Settings → About*, press *Build* 7 times), then turn on
+**network debugging** in *Developer options*. Download
+[`tv-launcher.apk`](https://github.com/margantcovka/androidtv-launcher/releases/latest) and run:
+
+```sh
+adb connect <TV IP>:5555
+adb install tv-launcher.apk
+adb shell cmd package compile -m speed -f io.github.margantcovka.tvlauncher
+```
+
+The last command is optional, but on weak TVs it makes animations noticeably smoother
+because the app is compiled ahead of time instead of by the JIT while animating.
+
+## Make it the home screen
+
+On most TVs the stock Google launcher takes priority on the **Home** button, so picking a
+default launcher has no effect. A one-time ADB fix:
 
 ```sh
 adb shell pm disable-user --user 0 com.google.android.tvlauncher
 adb shell cmd package set-home-activity io.github.margantcovka.tvlauncher/.MainActivity
 ```
 
-Откат:
+On **Google TV** the stock launcher is `com.google.android.apps.tv.launcherx`; use that in
+the first command.
+
+**To undo:**
 
 ```sh
 adb shell pm enable com.google.android.tvlauncher
 ```
 
-Без компьютера: плитка «Ещё → Стандартный экран», пока стандартный лаунчер отключён,
-открывает его страницу в настройках — там кнопка «Включить».
-На Google TV пакет другой: `com.google.android.apps.tv.launcherx`.
+Without a computer: open the **More → Stock Home Screen** tile. It opens the stock
+launcher's page in Settings, which has an *Enable* button.
 
-## Сборка
+> [!NOTE]
+> Disabling the system launcher is a standard Android feature: nothing is removed, and one
+> command brings it back. Still, you do this at your own risk.
 
-Нужны JDK 21 и Android SDK (на этом Маке — Homebrew: `openjdk@21`,
-`android-commandlinetools` в `/opt/homebrew/share/android-commandlinetools`).
+## Build from source
 
-```sh
-export JAVA_HOME=/opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home
-./gradlew assembleDebug        # app/build/outputs/apk/debug/app-debug.apk
-./gradlew assembleRelease      # минифицированный, пока подписан debug-ключом
-```
-
-`local.properties` (не в git) указывает `sdk.dir`.
-
-## Плавность на слабом телевизоре
-
-Целевой ТВ — AIPONT (Changhong, MediaTek M7322): Mali-470 (GLES 2.0), 4×A55 1.4 ГГц, 1.3 ГБ RAM.
-Что дало ~60 кадров/с (замер `tools/bench.py`: было ~99% опоздавших кадров, стало ~3%):
-
-- скруглённые плитки и тень готовятся картинками заранее — GPU не обрезает по форме и не считает тени;
-- фон всего экрана — одна непрозрачная картинка 64×36, смешиваемая на CPU (смена приложения,
-  затухание полки); фон окна отключён — нет лишней полноэкранной заливки;
-- анимации читаются в фазе отрисовки и не перекомпоновывают экран;
-- **предкомпиляция** `cmd package compile -m speed -f` после установки (иначе JIT ест ~30% CPU
-  во время анимаций) — это делает `tools/install.sh`.
-
-Проверено и отвергнуто: окно RGB_565 и маленькое окно не ускоряют композитор; ровные 30 кадров/с
-(через свои часы кадров) владельцу не понравились.
-
-`tools/cadence.sh` показывает реальную частоту панели: однажды она застряла на 50 Гц при
-60 Гц в Android (почти все кадры «опаздывали» даже без отрисовки); помогла перезагрузка ТВ.
-
-`tools/bench.py --dbg N` выключает части отрисовки (биты в `Debug.kt`), чтобы померить цену каждой.
-
-## Установка на телевизор
-
-На телевизоре: «Настройки → Об устройстве», 7 раз нажать на номер сборки → появятся
-«Для разработчиков» → включить «Отладку по USB/сети». Потом с Мака:
+Requires JDK 21 and the Android SDK (set `sdk.dir` in `local.properties`).
 
 ```sh
-SERIAL=<IP телевизора>:5555 tools/install.sh   # сборка, установка, предкомпиляция, запуск
+./gradlew assembleRelease   # app/build/outputs/apk/release/app-release.apk
 ```
 
-В первый раз на телевизоре нужно подтвердить запрос «Разрешить отладку».
+`tools/install.sh` builds the release APK, installs it on the TV, compiles it ahead of time
+and launches it: `SERIAL=<IP>:5555 tools/install.sh`.
 
-## Эмулятор
+<details>
+<summary><b>How it stays smooth on a weak TV</b></summary>
 
-Есть AVD `gtv36` (Google TV, Android 16, 1080p):
 
-```sh
-SDK=/opt/homebrew/share/android-commandlinetools
-$SDK/emulator/emulator -avd gtv36 -no-audio &        # с -no-window — без окна
-$SDK/platform-tools/adb exec-out screencap -p > shot.png
-$SDK/platform-tools/adb shell input keyevent DPAD_RIGHT DPAD_CENTER
-```
+Measured with `tools/bench.py`: late frames went from ~99% to ~3%.
 
-## Устройство кода
+- Rounded tiles and shadows are pre-rendered bitmaps, so the GPU never clips shapes or
+  computes shadows.
+- The full-screen backdrop is a single opaque 64×36 image blended on the CPU. No live blur,
+  and the window background is off.
+- Animations are read in the draw phase and never trigger recomposition.
+- Ahead-of-time compilation (`cmd package compile -m speed`); otherwise the JIT eats ~30%
+  of the CPU during animations.
+
+`tools/cadence.sh` reports the panel's real refresh rate. `tools/bench.py --dbg N` turns
+off parts of the drawing (bits in `Debug.kt`) to measure what each one costs.
+</details>
+
+<details>
+<summary><b>Code layout</b></summary>
 
 ```
 app/src/main/java/io/github/margantcovka/tvlauncher/
-  MainActivity.kt              экраны (главный / настройки), загрузка на onResume, Home
-  data/LauncherRepository.kt   все плитки: приложения + источники + «Ещё»
-  data/AppSource.kt            TV-приложения, баннеры/иконки (кэш по lastUpdateTime)
-  data/InputSource.kt          эфирное ТВ и HDMI/AV-входы
-  data/SymbolTiles.kt          плитки с иконкой и подписью (входы, «Ещё»)
-  data/LauncherPrefs.kt        порядок и скрытые плитки (SharedPreferences), Catalog
-  data/Launcher.kt             что делает плитка по OK
-  data/Images.kt               скруглённые плитки, тень, размытый фон top shelf
-  ui/HomeScreen.kt             top shelf + сетка по разделам, меню, перестановка
-  ui/Tile.kt                   плитка: масштаб, тень, блик, подпись
-  ui/TileMenu.kt, FocusRow.kt  меню по удержанию OK, строки в стиле tvOS
-  ui/SettingsScreen.kt         настройки главного экрана
-  ui/ShelfRenderer.kt          смешивание фона top shelf на CPU
-  ui/Tokens.kt                 цвета, размеры, тайминги
+  MainActivity.kt              screens (home / settings), reload on onResume, Home button
+  data/LauncherRepository.kt   all tiles: apps + sources + More
+  data/AppSource.kt            TV apps, banners and icons (cached by lastUpdateTime)
+  data/InputSource.kt          live TV and HDMI/AV inputs
+  data/SymbolTiles.kt          icon-and-label tiles (inputs, More)
+  data/LauncherPrefs.kt        tile order and hidden tiles (SharedPreferences)
+  data/Launcher.kt             what a tile does on OK
+  data/Images.kt               rounded tiles, shadows, blurred top shelf backdrop
+  ui/HomeScreen.kt             top shelf + grid by section, tile menu, reordering
+  ui/Tile.kt                   tile: scale, shadow, light sweep, label
+  ui/TileMenu.kt, FocusRow.kt  hold-OK menu, tvOS-style rows
+  ui/SettingsScreen.kt         home screen settings
+  ui/ShelfRenderer.kt          CPU blending of the top shelf backdrop
+  ui/Tokens.kt                 colors, sizes, timings
 ```
+</details>
+
+## See also
+
+[**SmartTube New**](https://github.com/margantcovka/SmartTube-New): a SmartTube fork with a
+UI in the style of this launcher.
+
+## Credits and license
+
+- Design and idea: [HarshInvader/webos-launcher](https://github.com/HarshInvader/webos-launcher) (MIT).
+- [Inter](https://rsms.me/inter/) font (SIL OFL 1.1, see `licenses/Inter-OFL.txt`), Material Icons (Apache 2.0).
+
+Released under the [MIT](LICENSE) license.

@@ -1,5 +1,6 @@
 package io.github.margantcovka.tvlauncher.ui
 
+import io.github.margantcovka.tvlauncher.R
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -43,21 +44,20 @@ fun rememberClockText(): State<ClockText> {
     return state
 }
 
-private val russian = Locale("ru")
-
 private fun clockText(context: Context): ClockText {
     val now = Date()
     val hour = Calendar.getInstance().apply { time = now }.get(Calendar.HOUR_OF_DAY)
     val greeting = when (hour) {
-        in 5..11 -> "Доброе утро"
-        in 12..17 -> "Добрый день"
-        in 18..22 -> "Добрый вечер"
-        else -> "Доброй ночи"
+        in 5..11 -> R.string.greeting_morning
+        in 12..17 -> R.string.greeting_afternoon
+        in 18..22 -> R.string.greeting_evening
+        else -> R.string.greeting_night
     }
+    val locale = context.resources.configuration.locales[0]
     val timePattern = if (DateFormat.is24HourFormat(context)) "H:mm" else "h:mm"
     return ClockText(
-        greeting = greeting,
-        date = SimpleDateFormat("EEEE, d MMMM", russian).format(now),
-        time = SimpleDateFormat(timePattern, russian).format(now),
+        greeting = context.getString(greeting),
+        date = SimpleDateFormat(DateFormat.getBestDateTimePattern(locale, "EEEEdMMMM"), locale).format(now),
+        time = SimpleDateFormat(timePattern, locale).format(now),
     )
 }

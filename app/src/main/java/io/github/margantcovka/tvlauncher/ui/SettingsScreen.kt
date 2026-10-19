@@ -1,5 +1,7 @@
 package io.github.margantcovka.tvlauncher.ui
 
+import io.github.margantcovka.tvlauncher.R
+import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -49,7 +51,7 @@ fun SettingsScreen(
 ) {
     BackHandler(onBack = onBack)
     val items = buildList {
-        val headers = mapOf(Section.APPS to "Приложения", Section.SOURCES to "Источники", Section.MORE to "Ещё")
+        val headers = mapOf(Section.APPS to stringResource(R.string.section_apps), Section.SOURCES to stringResource(R.string.section_sources), Section.MORE to stringResource(R.string.section_more))
         Section.entries.forEach { section ->
             val tiles = catalog.all.filter { it.section == section && it.hideable }
             if (tiles.isNotEmpty()) {
@@ -57,7 +59,7 @@ fun SettingsScreen(
                 tiles.forEach { add(SettingsItem.Toggle(it)) }
             }
         }
-        add(SettingsItem.Header("Порядок"))
+        add(SettingsItem.Header(stringResource(R.string.settings_order)))
         add(SettingsItem.ResetOrder)
     }
     val first = remember { FocusRequester() }
@@ -66,10 +68,10 @@ fun SettingsScreen(
 
     Row(Modifier.fillMaxSize().drawBehind { drawRect(Tokens.background) }) {
         Column(Modifier.fillMaxHeight().width(330.dp).padding(start = Tokens.sidePadding, top = 72.dp, end = 24.dp)) {
-            BasicText("Главный экран", style = TextStyle(color = Tokens.textPrimary, fontSize = 38.sp, fontFamily = InterDisplay, fontWeight = FontWeight.Bold))
+            BasicText(stringResource(R.string.settings_title), style = TextStyle(color = Tokens.textPrimary, fontSize = 38.sp, fontFamily = InterDisplay, fontWeight = FontWeight.Bold))
             Spacer(Modifier.height(16.dp))
             BasicText(
-                "Выберите, что показывать.\n\nНа главном экране удерживайте OK на плитке, чтобы переместить или скрыть её.",
+                stringResource(R.string.settings_hint),
                 style = TextStyle(color = Tokens.textSecondary, fontSize = 15.sp, fontFamily = InterDisplay, fontWeight = FontWeight.Medium, lineHeight = 21.sp),
             )
         }
@@ -106,13 +108,13 @@ fun SettingsScreen(
                                 modifier = Modifier.weight(1f),
                             )
                             BasicText(
-                                if (shown) "Показано" else "Скрыто",
+                                stringResource(if (shown) R.string.settings_shown else R.string.settings_hidden),
                                 style = TextStyle(color = color.copy(alpha = if (shown) 0.9f else 0.5f), fontSize = 15.sp, fontFamily = InterDisplay, fontWeight = FontWeight.Medium),
                             )
                         }
                     }
                     SettingsItem.ResetOrder -> FocusRow(onClick = onResetOrder, modifier = focusModifier.fillMaxWidth()) { color ->
-                        BasicText("Вернуть порядок по алфавиту", style = TextStyle(color = color, fontSize = 17.sp, fontFamily = InterDisplay, fontWeight = FontWeight.SemiBold))
+                        BasicText(stringResource(R.string.settings_reset_order), style = TextStyle(color = color, fontSize = 17.sp, fontFamily = InterDisplay, fontWeight = FontWeight.SemiBold))
                     }
                 }
             }
