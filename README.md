@@ -27,6 +27,8 @@ It was built for a budget TV (4× Cortex-A55, Mali-470 GPU, 1.3 GB RAM) and runs
 
 - **Apple TV–style top shelf**: a blurred backdrop of the focused app and its large title,
   with a greeting, the date and a clock above it.
+- **Weather under the clock**: current temperature and your city, detected by IP. Celsius by
+  default, Fahrenheit in settings, or turn it off.
 - **tvOS-style grid**: wide rounded tiles, five per row. The focused tile grows, casts a
   shadow and catches a light sweep.
 - **Three sections:**
@@ -35,7 +37,8 @@ It was built for a budget TV (4× Cortex-A55, Mali-470 GPU, 1.3 GB RAM) and runs
   - **Sources**: live TV and HDMI/AV inputs, one click to switch.
   - **More**: home screen settings, system settings, the stock launcher.
 - **Tile menu** (hold OK): move, hide from the home screen, app info.
-- **Home screen settings**: show or hide any tile, reset to alphabetical order.
+- **Home screen settings**: show or hide any tile, weather on/off and units, reset to
+  alphabetical order.
 - Back and Home return to the top of the screen.
 - **English and Russian**: the interface follows the TV's system language.
 - Inter Display font, the closest open alternative to SF Pro.
@@ -100,6 +103,13 @@ launcher's page in Settings, which has an *Enable* button.
 > Disabling the system launcher is a standard Android feature: nothing is removed, and one
 > command brings it back. Still, you do this at your own risk.
 
+## Privacy
+
+The launcher only goes online for the weather. Your approximate location comes from your IP
+address via [ipapi.co](https://ipapi.co) (or [ipwho.is](https://ipwho.is) as a fallback) and
+is cached for a day; the forecast comes from [Open-Meteo](https://open-meteo.com). No
+accounts, no analytics. Turn the weather off in *More → Home Screen* and nothing is sent.
+
 ## Build from source
 
 Requires JDK 21 and the Android SDK (set `sdk.dir` in `local.properties`).
@@ -140,6 +150,7 @@ app/src/main/java/io/github/margantcovka/tvlauncher/
   data/InputSource.kt          live TV and HDMI/AV inputs
   data/SymbolTiles.kt          icon-and-label tiles (inputs, More)
   data/LauncherPrefs.kt        tile order and hidden tiles (SharedPreferences)
+  data/Weather.kt              location by IP, Open-Meteo forecast, cache
   data/Launcher.kt             what a tile does on OK
   data/Images.kt               rounded tiles, shadows, blurred top shelf backdrop
   ui/HomeScreen.kt             top shelf + grid by section, tile menu, reordering

@@ -29,4 +29,10 @@
 
     <string name="toast_order_reset">Порядок сброшен</string>
     <string name="toast_open_failed">Не удалось открыть «%1$s»</string>
+
+    <string name="settings_weather">Погода</string>
+    <string name="settings_weather_show">Погода под часами</string>
+    <string name="settings_weather_units">Единицы</string>
+    <string name="units_celsius">Цельсий (°C)</string>
+    <string name="units_fahrenheit">Фаренгейт (°F)</string>
 </resources>

@@ -31,4 +31,10 @@
 
     <string name="toast_order_reset">Order reset</string>
     <string name="toast_open_failed">Couldn\'t open “%1$s”</string>
+
+    <string name="settings_weather">Weather</string>
+    <string name="settings_weather_show">Weather under the clock</string>
+    <string name="settings_weather_units">Units</string>
+    <string name="units_celsius">Celsius (°C)</string>
+    <string name="units_fahrenheit">Fahrenheit (°F)</string>
 </resources>

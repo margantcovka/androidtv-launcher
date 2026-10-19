@@ -1,5 +1,13 @@
 package io.github.margantcovka.tvlauncher.ui
 
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.res.painterResource
+import io.github.margantcovka.tvlauncher.R
+import io.github.margantcovka.tvlauncher.data.Condition
+import io.github.margantcovka.tvlauncher.data.Weather
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.animateFloatAsState
@@ -34,7 +42,7 @@ import kotlin.math.roundToInt
  * смена приложения не вызывает перекомпоновку, а GPU рисует одну картинку и текст.
  */
 @Composable
-fun TopShelf(app: LauncherTile?, visible: Boolean, modifier: Modifier = Modifier) {
+fun TopShelf(app: LauncherTile?, visible: Boolean, weather: Weather?, modifier: Modifier = Modifier) {
     val renderer = remember { ShelfRenderer(Tokens.background.toArgb()) }
     val fade = remember { Animatable(1f) }
     val visibility = animateFloatAsState(if (visible) 1f else 0f, tween(Tokens.shelfFadeMs, easing = LinearEasing), label = "shelf")
@@ -45,6 +53,9 @@ fun TopShelf(app: LauncherTile?, visible: Boolean, modifier: Modifier = Modifier
     val dateStyle = remember { TextStyle(color = Tokens.headerSecondary, fontSize = Tokens.dateSize, fontFamily = InterDisplay, fontWeight = FontWeight.Medium) }
     // tnum: цифры одной ширины, время не дёргается при смене минут.
     val timeStyle = remember { TextStyle(color = Tokens.textPrimary, fontSize = Tokens.clockSize, fontFamily = InterDisplay, fontWeight = FontWeight.SemiBold, fontFeatureSettings = "tnum") }
+    val currentWeather = rememberUpdatedState(weather)
+    val weatherIcons = Condition.entries.associateWith { painterResource(weatherIcon(it)) }
+    val weatherTint = remember { ColorFilter.tint(Tokens.headerSecondary) }
     var previousTitle by remember { mutableStateOf<String?>(null) }
     var title by remember { mutableStateOf<String?>(null) }
 
@@ -79,6 +90,19 @@ fun TopShelf(app: LauncherTile?, visible: Boolean, modifier: Modifier = Modifier
                 // Время на одной базовой линии с приветствием.
                 val timeTop = headerTop + greeting.firstBaseline - time.firstBaseline
                 drawText(time, topLeft = Offset(size.width - pad - time.size.width, timeTop), alpha = v)
+                // Погода справа под часами, на одной линии с датой: иконка, температура, город.
+                currentWeather.value?.let { w ->
+                    val label = if (w.city.isBlank()) "${w.temperature}°" else "${w.temperature}° · ${w.city}"
+                    val line = measurer.measure(label, dateStyle, maxLines = 1)
+                    val lineTop = headerTop + greeting.size.height + 2.dp.toPx()
+                    val right = size.width - pad
+                    drawText(line, topLeft = Offset(right - line.size.width, lineTop), alpha = v)
+                    val iconSize = line.size.height * 0.9f
+                    val iconLeft = right - line.size.width - 6.dp.toPx() - iconSize
+                    translate(iconLeft, lineTop + (line.size.height - iconSize) / 2f) {
+                        with(weatherIcons.getValue(w.condition)) { draw(Size(iconSize, iconSize), alpha = v, colorFilter = weatherTint) }
+                    }
+                }
             }
             val top = (Tokens.shelfHeight - 96.dp).toPx()
             val constraints = Constraints(maxWidth = (size.width - 2 * pad).roundToInt().coerceAtLeast(0))
@@ -91,4 +115,15 @@ fun TopShelf(app: LauncherTile?, visible: Boolean, modifier: Modifier = Modifier
             draw(title, t * v)
         },
     )
+}
+
+private fun weatherIcon(condition: Condition): Int = when (condition) {
+    Condition.CLEAR -> R.drawable.ic_weather_clear
+    Condition.NIGHT -> R.drawable.ic_weather_night
+    Condition.CLOUDY -> R.drawable.ic_weather_cloudy
+    Condition.OVERCAST -> R.drawable.ic_weather_overcast
+    Condition.FOG -> R.drawable.ic_weather_fog
+    Condition.RAIN -> R.drawable.ic_weather_rain
+    Condition.SNOW -> R.drawable.ic_weather_snow
+    Condition.STORM -> R.drawable.ic_weather_storm
 }

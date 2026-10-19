@@ -1,5 +1,6 @@
 package io.github.margantcovka.tvlauncher.ui
 
+import io.github.margantcovka.tvlauncher.data.Weather
 import io.github.margantcovka.tvlauncher.R
 import androidx.compose.ui.res.stringResource
 import androidx.activity.compose.BackHandler
@@ -70,6 +71,7 @@ fun HomeScreen(
     spec: TileSpec,
     isHome: Boolean,
     homePresses: Int,
+    weather: Weather?,
     onOpen: (LauncherTile) -> Unit,
     onAppInfo: (LauncherTile) -> Unit,
     onHide: (LauncherTile) -> Unit,
@@ -171,7 +173,7 @@ fun HomeScreen(
                 true
             },
     ) {
-        TopShelf(focusedTile, inFirstRow)
+        TopShelf(focusedTile, inFirstRow, weather)
 
         when {
             catalog == null -> Unit

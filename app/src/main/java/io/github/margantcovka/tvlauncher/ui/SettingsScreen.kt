@@ -39,7 +39,12 @@ private sealed interface SettingsItem {
     data class Header(val text: String) : SettingsItem
     data class Toggle(val tile: LauncherTile) : SettingsItem
     data object ResetOrder : SettingsItem
+    data object WeatherToggle : SettingsItem
+    data object WeatherUnits : SettingsItem
 }
+
+/** Настройки погоды в шапке. */
+data class WeatherSettings(val enabled: Boolean, val fahrenheit: Boolean)
 
 /** Настройки главного экрана: какие плитки показывать и сброс порядка. */
 @Composable
@@ -47,6 +52,9 @@ fun SettingsScreen(
     catalog: Catalog,
     onToggleHidden: (LauncherTile) -> Unit,
     onResetOrder: () -> Unit,
+    weather: WeatherSettings,
+    onToggleWeather: () -> Unit,
+    onToggleUnits: () -> Unit,
     onBack: () -> Unit,
 ) {
     BackHandler(onBack = onBack)
@@ -59,6 +67,9 @@ fun SettingsScreen(
                 tiles.forEach { add(SettingsItem.Toggle(it)) }
             }
         }
+        add(SettingsItem.Header(stringResource(R.string.settings_weather)))
+        add(SettingsItem.WeatherToggle)
+        if (weather.enabled) add(SettingsItem.WeatherUnits)
         add(SettingsItem.Header(stringResource(R.string.settings_order)))
         add(SettingsItem.ResetOrder)
     }
@@ -85,6 +96,8 @@ fun SettingsScreen(
                     is SettingsItem.Header -> "h:" + item.text
                     is SettingsItem.Toggle -> item.tile.key
                     SettingsItem.ResetOrder -> "reset"
+                    SettingsItem.WeatherToggle -> "weather"
+                    SettingsItem.WeatherUnits -> "units"
                 }
             }) { item ->
                 val index = items.indexOf(item)
@@ -113,11 +126,43 @@ fun SettingsScreen(
                             )
                         }
                     }
+                    SettingsItem.WeatherToggle -> ValueRow(
+                        title = stringResource(R.string.settings_weather_show),
+                        value = stringResource(if (weather.enabled) R.string.settings_shown else R.string.settings_hidden),
+                        dimValue = !weather.enabled,
+                        onClick = onToggleWeather,
+                        modifier = focusModifier,
+                    )
+                    SettingsItem.WeatherUnits -> ValueRow(
+                        title = stringResource(R.string.settings_weather_units),
+                        value = stringResource(if (weather.fahrenheit) R.string.units_fahrenheit else R.string.units_celsius),
+                        dimValue = false,
+                        onClick = onToggleUnits,
+                        modifier = focusModifier,
+                    )
                     SettingsItem.ResetOrder -> FocusRow(onClick = onResetOrder, modifier = focusModifier.fillMaxWidth()) { color ->
                         BasicText(stringResource(R.string.settings_reset_order), style = TextStyle(color = color, fontSize = 17.sp, fontFamily = InterDisplay, fontWeight = FontWeight.SemiBold))
                     }
                 }
             }
         }
+    }
+}
+
+/** Строка настройки: название слева, текущее значение справа, OK переключает. */
+@Composable
+private fun ValueRow(title: String, value: String, dimValue: Boolean, onClick: () -> Unit, modifier: Modifier) {
+    FocusRow(onClick = onClick, modifier = modifier.fillMaxWidth()) { color ->
+        BasicText(
+            title,
+            style = TextStyle(color = color, fontSize = 17.sp, fontFamily = InterDisplay, fontWeight = FontWeight.SemiBold),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        BasicText(
+            value,
+            style = TextStyle(color = color.copy(alpha = if (dimValue) 0.5f else 0.9f), fontSize = 15.sp, fontFamily = InterDisplay, fontWeight = FontWeight.Medium),
+        )
     }
 }
